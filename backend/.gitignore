@@ -32,3 +32,6 @@ coverage.xml
 *.swp
 *.swo
 .DS_Store 
+
+# SSL
+*.pem
