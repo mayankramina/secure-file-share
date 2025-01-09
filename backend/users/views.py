@@ -171,3 +171,75 @@ def setup_mfa(request):
             {'error': 'Failed to setup MFA'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+@api_view(['POST'])
+def logout(request):
+    response = Response({'message': 'Logged out successfully'})
+    
+    # Clear both access and refresh token cookies
+    response.delete_cookie(settings.JWT_COOKIE_NAME)
+    response.delete_cookie(settings.JWT_REFRESH_COOKIE_NAME)
+    
+    return response
+
+@api_view(['POST'])
+@jwt_required
+def verify_mfa(request):
+    try:
+        totp_code = request.data.get('token')
+        
+        if not totp_code:
+            return Response(
+                {'error': 'TOTP code is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        if not request.user.mfa_secret:
+            return Response(
+                {'error': 'MFA not set up for this user'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Verify TOTP code
+        totp = pyotp.TOTP(request.user.mfa_secret)
+        if not totp.verify(totp_code):
+            return Response(
+                {'error': 'Invalid TOTP code'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+            
+        # Generate new access token with updated MFA status
+        access_payload = {
+            'user_id': request.user.id,
+            'username': request.user.username,
+            'role': request.user.role,
+            'is_mfa_enabled': True,
+            'token_type': 'access',
+            'exp': datetime.now(timezone.utc) + settings.JWT_SETTINGS['ACCESS_TOKEN_LIFETIME']
+        }
+        
+        new_access_token = jwt.encode(
+            access_payload,
+            settings.JWT_SETTINGS['SIGNING_KEY'],
+            algorithm=settings.JWT_SETTINGS['ALGORITHM']
+        )
+        
+        response = Response({'message': 'MFA verified, login successful'})
+        
+        # Update access token cookie
+        response.set_cookie(
+            settings.JWT_COOKIE_NAME,
+            new_access_token,
+            max_age=settings.JWT_SETTINGS['ACCESS_TOKEN_LIFETIME'].total_seconds(),
+            secure=settings.COOKIE_SECURE,
+            httponly=settings.COOKIE_HTTPONLY,
+            samesite=settings.SAME_SITE
+        )
+        
+        return response
+        
+    except Exception as e:
+        return Response(
+            {'error': 'Failed to verify MFA'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
