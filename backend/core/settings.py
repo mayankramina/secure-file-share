@@ -166,3 +166,5 @@ if os.getenv('ALLOWED_ORIGINS'):
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
 ]
+
+APPEND_SLASH = False
