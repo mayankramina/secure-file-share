@@ -8,6 +8,11 @@ from django.utils import timezone
 from django.conf import settings
 import jwt
 from datetime import datetime
+import pyotp
+import qrcode
+import base64
+from io import BytesIO
+from .decorators import jwt_required
 
 
 @api_view(['POST'])
@@ -21,17 +26,17 @@ def register(request):
                 status=status.HTTP_201_CREATED
             )
         return Response(
-            {'message': serializer.errors},
+            {'error': serializer.errors},
             status=status.HTTP_400_BAD_REQUEST
         )
     except IntegrityError:
         return Response(
-            {'message': 'Database integrity error occurred'},
+            {'error': 'Database integrity error occurred'},
             status=status.HTTP_400_BAD_REQUEST
         )
     except Exception as e:
         return Response(
-            {'message': 'An unexpected error occurred'},
+            {'error': 'An unexpected error occurred'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     
@@ -123,6 +128,46 @@ def login(request):
         return response
     except Exception as e:
         return Response(
-            {'message': 'An unexpected error occurred'},
+            {'error': 'An unexpected error occurred'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+@jwt_required
+def setup_mfa(request):
+    try:
+        # Generate new TOTP secret
+        secret = pyotp.random_base32()
+        
+        # Create QR code
+        totp = pyotp.TOTP(secret)
+        provisioning_uri = totp.provisioning_uri(
+            request.user.username,
+            issuer_name=settings.MFA_ISSUER_NAME
+        )
+        
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(provisioning_uri)
+        qr.make(fit=True)
+        
+        # Create QR code image
+        img_buffer = BytesIO()
+        qr_image = qr.make_image(fill_color="black", back_color="white")
+        qr_image.save(img_buffer, format='PNG')
+        qr_base64 = base64.b64encode(img_buffer.getvalue()).decode()
+        
+        # Save secret temporarily (will be confirmed in verify step)
+        request.user.mfa_secret = secret
+        request.user.save()
+        
+        return Response({
+            'message': 'MFA setup initiated',
+            'secret': secret,
+            'qr_code': f'data:image/png;base64,{qr_base64}'
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': 'Failed to setup MFA'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

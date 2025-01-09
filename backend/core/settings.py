@@ -168,3 +168,5 @@ PASSWORD_HASHERS = [
 ]
 
 APPEND_SLASH = False
+
+MFA_ISSUER_NAME = os.getenv('MFA_ISSUER_NAME', 'YourApp')
