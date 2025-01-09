@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User
 
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(admin.ModelAdmin):
     # What columns to show in the user list view
     list_display = ('username', 'role', 'created_at')
     
@@ -15,9 +15,20 @@ class CustomUserAdmin(UserAdmin):
 
     # Fields to use when editing an existing user
     fieldsets = (
-        (None, {'fields': ('username', 'password')}),
-        ('User Information', {'fields': ('role')}),
-        ('Dates', {'fields': ('created_at',)}),
+        (None, {
+            'fields': ('username', 'password')
+        }),
+        ('User Information', {
+            'fields': ['role']
+        }),
+        ('Dates', {
+            'fields': ['created_at']
+        }),
     )
+    
+    list_filter = ('role',)
+    search_fields = ('username',)
+    ordering = ('username',)
+    readonly_fields = ('created_at',)
 
 admin.site.register(User, CustomUserAdmin)

@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
 
@@ -27,7 +27,7 @@ class UserManager(BaseUserManager):
         user.save()
         return user
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     role = models.CharField(
         max_length=5,
@@ -43,7 +43,16 @@ class User(AbstractBaseUser):
     # These two fields are required for Django admin
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     objects = UserManager()
 
     USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = []  # List of fields required when creating a superuser
+
+    class Meta:
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
+
+    def __str__(self):
+        return self.username

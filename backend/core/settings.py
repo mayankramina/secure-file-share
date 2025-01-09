@@ -140,9 +140,9 @@ REST_FRAMEWORK = {
 
 JWT_SETTINGS = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'SIGNING_KEY': os.getenv('JWT_SECRET_KEY'),  # Get from .env
-    'ALGORITHM': os.getenv('JWT_ALGORITHM'),      # Get from .env
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'SIGNING_KEY': os.getenv('JWT_SECRET_KEY'),
+    'ALGORITHM': os.getenv('JWT_ALGORITHM'),
 }
 
 JWT_COOKIE_NAME = 'access_token'
@@ -152,7 +152,15 @@ COOKIE_HTTPONLY = os.getenv('COOKIE_HTTPONLY', 'True').lower() == 'true'
 SAME_SITE = 'Strict'
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '').split(',')
+CORS_ALLOWED_ORIGINS = []
+
+if os.getenv('ALLOWED_ORIGINS'):
+    additional_origins = [
+        origin.strip() 
+        for origin in os.getenv('ALLOWED_ORIGINS').split(',') 
+        if origin.strip().startswith(('http://', 'https://'))
+    ]
+    CORS_ALLOWED_ORIGINS.extend(additional_origins)
 
 # Password Hashing Settings
 PASSWORD_HASHERS = [
