@@ -4,8 +4,7 @@ import jwt
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User
-from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timezone
 
 def jwt_required(view_func):
     @wraps(view_func)
@@ -16,14 +15,9 @@ def jwt_required(view_func):
         # No tokens present
         if not access_token and not refresh_token:
             return Response(
-                {'error': 'Authentication required'},
+                {},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-
-        def ensure_mfa_header(response):
-            if 'X-MFA-Enabled' not in response:
-                response['X-MFA-Enabled'] = str(bool(request.user.mfa_secret)).lower()
-            return response
 
         try:
             # Try to validate access token first
@@ -37,8 +31,7 @@ def jwt_required(view_func):
                 raise jwt.InvalidTokenError
             
             request.user = User.objects.get(id=payload['user_id'])
-            response = view_func(request, *args, **kwargs)
-            return ensure_mfa_header(response)
+            return view_func(request, *args, **kwargs)
             
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, TypeError):
             # Access token invalid, try refresh token
@@ -80,7 +73,6 @@ def jwt_required(view_func):
                 request.user = user
                 
                 response = view_func(request, *args, **kwargs)
-                response = ensure_mfa_header(response)
                 
                 # Set new access token cookie in response
                 response.set_cookie(
@@ -121,8 +113,8 @@ def mfa_enabled(view_func):
             return response
             
         return Response(
-            {'error': 'MFA required'},
-            status=status.HTTP_401_UNAUTHORIZED
+            {'error': 'MFA required', 'requires_mfa_setup': True},
+            status=status.HTTP_403_FORBIDDEN
         )
         
     return wrapped
@@ -136,8 +128,8 @@ def mfa_disabled(view_func):
             return response
             
         return Response(
-            {'error': 'MFA must be disabled'},
-            status=status.HTTP_401_UNAUTHORIZED
+            {'error': 'MFA already setup'},
+            status=status.HTTP_400_BAD_REQUEST
         )
         
     return wrapped

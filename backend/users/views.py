@@ -4,10 +4,9 @@ from rest_framework import status
 from .serializers import UserCreateSerializer
 from django.db import IntegrityError
 from django.contrib.auth import authenticate
-from django.utils import timezone
 from django.conf import settings
 import jwt
-from datetime import datetime
+from datetime import datetime, timezone
 import pyotp
 import qrcode
 import base64
@@ -25,8 +24,18 @@ def register(request):
                 {'message': 'Registration successful. Go to login page to login', 'username': serializer.data['username']},
                 status=status.HTTP_201_CREATED
             )
+        
+        # Flatten serializer errors into a single string
+        error_messages = []
+        for field, errors in serializer.errors.items():
+            # Handle both string and list errors
+            if isinstance(errors, list):
+                error_messages.append(' '.join(errors))
+            else:
+                error_messages.append(errors)
+                
         return Response(
-            {'error': serializer.errors},
+            {'error': ' '.join(error_messages)},
             status=status.HTTP_400_BAD_REQUEST
         )
     except IntegrityError:
@@ -35,6 +44,7 @@ def register(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     except Exception as e:
+        print(e)
         return Response(
             {'error': 'An unexpected error occurred'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -91,7 +101,7 @@ def login(request):
         )
         
         response = Response({'username': user.username})
-        
+
         # Set access token cookie
         response.set_cookie(
             settings.JWT_COOKIE_NAME,
@@ -114,6 +124,7 @@ def login(request):
         
         return response
     except Exception as e:
+        print(e)
         return Response(
             {'error': 'An unexpected error occurred'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -154,6 +165,7 @@ def setup_mfa(request):
         })
         
     except Exception as e:
+        print(e)
         return Response(
             {'error': 'Failed to setup MFA'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -171,7 +183,7 @@ def logout(request):
 
 @api_view(['POST'])
 @jwt_required
-@mfa_disabled
+@mfa_enabled
 def verify_mfa(request):
     try:
         totp_code = request.data.get('token')
@@ -193,7 +205,7 @@ def verify_mfa(request):
         if not totp.verify(totp_code):
             return Response(
                 {'error': 'Invalid TOTP code'},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_400_BAD_REQUEST
             )
         
         response = Response({'message': 'MFA verified, login successful', 'username': request.user.username})
@@ -201,8 +213,29 @@ def verify_mfa(request):
         return response
         
     except Exception as e:
+        print(e)
         return Response(
             {'error': 'Failed to verify MFA'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+@jwt_required
+@mfa_enabled
+def disable_mfa(request):
+    try:
+        request.user.mfa_secret = None
+        request.user.save()
+        
+        response = Response({
+            'message': 'MFA disabled successfully'
+        })
+        return response
+        
+    except Exception as e:
+        print(e)
+        return Response(
+            {'error': 'Failed to disable MFA'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -219,27 +252,8 @@ def get_my_info(request):
         }
         return Response(user_data)
     except Exception as e:
+        print(e)
         return Response(
             {'error': 'Failed to fetch user information'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(['POST'])
-@jwt_required
-@mfa_enabled
-def disable_mfa(request):
-    try:
-        request.user.mfa_secret = None
-        request.user.save()
-        
-        response = Response({
-            'message': 'MFA disabled successfully'
-        })
-        response['X-MFA-Enabled'] = 'false'  # Explicitly set header to false
-        return response
-        
-    except Exception as e:
-        return Response(
-            {'error': 'Failed to disable MFA'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

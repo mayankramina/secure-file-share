@@ -5,13 +5,13 @@ from . import views
 
 urlpatterns = [
     # Authentication endpoints
-    path('/auth/register', views.register, name='register'),
-    path('/auth/login', views.login, name='login'),
-    path('/auth/mfa/setup', views.setup_mfa, name='mfa-setup'),
-    path('/auth/mfa/verify', views.verify_mfa, name='mfa-verify'),
-    path('/auth/logout', views.logout, name='logout'),
-    path('/auth/mfa/disable', views.disable_mfa, name='mfa-disable'),
+    path('auth/register', views.register, name='register'),
+    path('auth/login', views.login, name='login'),
+    path('auth/mfa/setup', views.setup_mfa, name='mfa-setup'),
+    path('auth/mfa/verify', views.verify_mfa, name='mfa-verify'),
+    path('auth/logout', views.logout, name='logout'),
+    path('auth/mfa/disable', views.disable_mfa, name='mfa-disable'),
     
     # authenticated user info
-    path('/me', views.get_my_info, name='get_my_info'),
+    path('me', views.get_my_info, name='get_my_info'),
 ] 

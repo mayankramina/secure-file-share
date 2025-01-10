@@ -152,15 +152,32 @@ COOKIE_HTTPONLY = os.getenv('COOKIE_HTTPONLY', 'True').lower() == 'true'
 SAME_SITE = 'Strict'
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:3000",  
+]
 
-if os.getenv('ALLOWED_ORIGINS'):
-    additional_origins = [
-        origin.strip() 
-        for origin in os.getenv('ALLOWED_ORIGINS').split(',') 
-        if origin.strip().startswith(('http://', 'https://'))
-    ]
-    CORS_ALLOWED_ORIGINS.extend(additional_origins)
+# Add CORS allowed methods and headers
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
 
 # Password Hashing Settings
 PASSWORD_HASHERS = [
@@ -169,4 +186,10 @@ PASSWORD_HASHERS = [
 
 APPEND_SLASH = False
 
+# MFA Settings
 MFA_ISSUER_NAME = os.getenv('MFA_ISSUER_NAME', 'YourApp')
+
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = [
+    "https://localhost:3000",
+]
