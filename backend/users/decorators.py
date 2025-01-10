@@ -32,7 +32,10 @@ def jwt_required(view_func):
                 raise jwt.InvalidTokenError
             
             request.user = User.objects.get(id=payload['user_id'])
-            return view_func(request, *args, **kwargs)
+            response = view_func(request, *args, **kwargs)
+            # Add MFA status header
+            response['X-MFA-Enabled'] = str(bool(request.user.mfa_secret)).lower()
+            return response
             
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, TypeError):
             # Access token invalid, try refresh token
@@ -59,7 +62,6 @@ def jwt_required(view_func):
                     'user_id': user.id,
                     'username': user.username,
                     'role': user.role,
-                    'is_mfa_enabled': bool(user.mfa_secret),
                     'token_type': 'access',
                     'exp': datetime.now(timezone.utc) + settings.JWT_SETTINGS['ACCESS_TOKEN_LIFETIME']
                 }
@@ -75,6 +77,9 @@ def jwt_required(view_func):
                 request.user = user
                 
                 response = view_func(request, *args, **kwargs)
+                
+                # Add MFA status header
+                response['X-MFA-Enabled'] = str(bool(request.user.mfa_secret)).lower()
                 
                 # Set new access token cookie in response
                 response.set_cookie(
@@ -105,3 +110,33 @@ def jwt_required(view_func):
             )
             
     return wrapped 
+
+def mfa_enabled(view_func):
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        # Simply check if MFA is enabled
+        if request.user.mfa_secret:
+            response = view_func(request, *args, **kwargs)
+            return response
+            
+        return Response(
+            {'error': 'MFA required'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+        
+    return wrapped
+
+def mfa_disabled(view_func):
+    @wraps(view_func) 
+    def wrapped(request, *args, **kwargs):
+        # Simply check if MFA is disabled
+        if not request.user.mfa_secret:
+            response = view_func(request, *args, **kwargs)
+            return response
+            
+        return Response(
+            {'error': 'MFA must be disabled'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+        
+    return wrapped

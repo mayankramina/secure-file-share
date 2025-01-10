@@ -12,5 +12,5 @@ urlpatterns = [
     path('/auth/logout', views.logout, name='logout'),
     
     # authenticated user info
-    # path('me/', views.get_my_info, name='get_my_info'),
+    path('/me', views.get_my_info, name='get_my_info'),
 ] 

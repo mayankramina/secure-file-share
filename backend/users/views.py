@@ -12,7 +12,7 @@ import pyotp
 import qrcode
 import base64
 from io import BytesIO
-from .decorators import jwt_required
+from .decorators import jwt_required, mfa_enabled, mfa_disabled
 
 
 @api_view(['POST'])
@@ -39,18 +39,6 @@ def register(request):
             {'error': 'An unexpected error occurred'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    
-
-@api_view(['GET'])
-def sample_api(request):
-    data = {
-        "message": "Hello from Users API",
-        "users": [
-            {"id": 1, "name": "John Doe", "email": "john@example.com"},
-            {"id": 2, "name": "Jane Smith", "email": "jane@example.com"}
-        ]
-    }
-    return Response(data) 
 
 
 @api_view(['POST'])
@@ -77,8 +65,7 @@ def login(request):
         access_payload = {
             'user_id': user.id,
             'username': user.username,
-            'role': user.role, 
-            'is_mfa_enabled': bool(user.mfa_secret),
+            'role': user.role,
             'token_type': 'access',
             'exp': datetime.now(timezone.utc) + settings.JWT_SETTINGS['ACCESS_TOKEN_LIFETIME']
         }
@@ -103,7 +90,7 @@ def login(request):
             algorithm=settings.JWT_SETTINGS['ALGORITHM']
         )
         
-        response = Response({'message': 'Login successful'})
+        response = Response({'username': user.username})
         
         # Set access token cookie
         response.set_cookie(
@@ -134,6 +121,7 @@ def login(request):
 
 @api_view(['POST'])
 @jwt_required
+@mfa_disabled
 def setup_mfa(request):
     try:
         # Generate new TOTP secret
@@ -161,7 +149,6 @@ def setup_mfa(request):
         request.user.save()
         
         return Response({
-            'message': 'MFA setup initiated',
             'secret': secret,
             'qr_code': f'data:image/png;base64,{qr_base64}'
         })
@@ -184,6 +171,7 @@ def logout(request):
 
 @api_view(['POST'])
 @jwt_required
+@mfa_disabled
 def verify_mfa(request):
     try:
         totp_code = request.data.get('token')
@@ -207,39 +195,31 @@ def verify_mfa(request):
                 {'error': 'Invalid TOTP code'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-            
-        # Generate new access token with updated MFA status
-        access_payload = {
-            'user_id': request.user.id,
-            'username': request.user.username,
-            'role': request.user.role,
-            'is_mfa_enabled': True,
-            'token_type': 'access',
-            'exp': datetime.now(timezone.utc) + settings.JWT_SETTINGS['ACCESS_TOKEN_LIFETIME']
-        }
         
-        new_access_token = jwt.encode(
-            access_payload,
-            settings.JWT_SETTINGS['SIGNING_KEY'],
-            algorithm=settings.JWT_SETTINGS['ALGORITHM']
-        )
-        
-        response = Response({'message': 'MFA verified, login successful'})
-        
-        # Update access token cookie
-        response.set_cookie(
-            settings.JWT_COOKIE_NAME,
-            new_access_token,
-            max_age=settings.JWT_SETTINGS['ACCESS_TOKEN_LIFETIME'].total_seconds(),
-            secure=settings.COOKIE_SECURE,
-            httponly=settings.COOKIE_HTTPONLY,
-            samesite=settings.SAME_SITE
-        )
+        response = Response({'message': 'MFA verified, login successful', 'username': request.user.username})
         
         return response
         
     except Exception as e:
         return Response(
             {'error': 'Failed to verify MFA'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@jwt_required
+@mfa_enabled
+def get_my_info(request):
+    try:
+        user_data = {
+            'id': request.user.id,
+            'username': request.user.username,
+            'role': request.user.role,
+            'created_at': request.user.created_at
+        }
+        return Response(user_data)
+    except Exception as e:
+        return Response(
+            {'error': 'Failed to fetch user information'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
