@@ -1,28 +1,27 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import FullScreenLoader from '../common/FullScreenLoader';
 
-export const NonAuthRoute = ({ children }) => {
+export const AuthAndMFAProtectedRoute = ({ children }) => {
   const location = useLocation();
   const { isAuthenticated, isMFAEnabled, loading } = useSelector((state) => state.auth);
   const isMFAVerified = sessionStorage.getItem('isMFAVerified') === 'true';
 
-
   if (loading) {
-    return <div>Loading...</div>;
+    return <FullScreenLoader />;
   }
 
-  if (isAuthenticated && isMFAEnabled && isMFAVerified) {
-    return <Navigate to="/dashboard" state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (isAuthenticated && !isMFAEnabled && !isMFAVerified) {
+  if (!isMFAEnabled && !isMFAVerified) {
     return <Navigate to="/mfa/setup" state={{ from: location }} replace />;
   }
 
-  if (isAuthenticated && isMFAEnabled && !isMFAVerified) {
+  if (isMFAEnabled && !isMFAVerified) {
     return <Navigate to="/mfa" state={{ from: location }} replace />;
   }
 
-
-  return children;
-};
+  return children || <Navigate to="/dashboard" state={{ from: location }} replace />;
+}; 
