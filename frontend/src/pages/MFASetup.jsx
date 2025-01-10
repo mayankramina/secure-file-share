@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import api from '../utils/api';
-import { setMFAEnabled } from '../store/authSlice';
 
 function MFASetup() {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
   const [qrCode, setQrCode] = useState('');
   const [secret, setSecret] = useState('');
   const [token, setToken] = useState('');

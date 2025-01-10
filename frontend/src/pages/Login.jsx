@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../utils/api';
 
 function Login() {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -21,7 +20,7 @@ function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await api.post('/users/auth/login', formData);
+        await api.post('/users/auth/login', formData);
     } catch (error) {
       // Error handling is managed by the API interceptor
       console.error('Login failed:', error);
