@@ -20,6 +20,11 @@ def jwt_required(view_func):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
+        def ensure_mfa_header(response):
+            if 'X-MFA-Enabled' not in response:
+                response['X-MFA-Enabled'] = str(bool(request.user.mfa_secret)).lower()
+            return response
+
         try:
             # Try to validate access token first
             payload = jwt.decode(
@@ -33,9 +38,7 @@ def jwt_required(view_func):
             
             request.user = User.objects.get(id=payload['user_id'])
             response = view_func(request, *args, **kwargs)
-            # Add MFA status header
-            response['X-MFA-Enabled'] = str(bool(request.user.mfa_secret)).lower()
-            return response
+            return ensure_mfa_header(response)
             
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, TypeError):
             # Access token invalid, try refresh token
@@ -77,9 +80,7 @@ def jwt_required(view_func):
                 request.user = user
                 
                 response = view_func(request, *args, **kwargs)
-                
-                # Add MFA status header
-                response['X-MFA-Enabled'] = str(bool(request.user.mfa_secret)).lower()
+                response = ensure_mfa_header(response)
                 
                 # Set new access token cookie in response
                 response.set_cookie(

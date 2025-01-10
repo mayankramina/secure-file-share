@@ -223,3 +223,23 @@ def get_my_info(request):
             {'error': 'Failed to fetch user information'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+@api_view(['POST'])
+@jwt_required
+@mfa_enabled
+def disable_mfa(request):
+    try:
+        request.user.mfa_secret = None
+        request.user.save()
+        
+        response = Response({
+            'message': 'MFA disabled successfully'
+        })
+        response['X-MFA-Enabled'] = 'false'  # Explicitly set header to false
+        return response
+        
+    except Exception as e:
+        return Response(
+            {'error': 'Failed to disable MFA'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
