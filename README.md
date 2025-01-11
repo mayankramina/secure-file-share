@@ -1,5 +1,5 @@
 
-# ✅ Secure File Sharing Application  
+# Secure File Sharing Application  
 
 This repository contains a **Client-Side E2EE secure file-sharing web application** designed for safe, efficient file uploads, downloads, and sharing.
 
@@ -84,10 +84,12 @@ Supports browser-session-specific TOTP-based MFA (e.g., Google Authenticator).
 - **Regular User**: Upload, download, and share files.  
 - **Guest**: View shared files with limited access.  
 
-### ✅ **End-to-End Encrypted (Zero-Knowledge Encryption)**  
-- There is seperate key management system to replicate trusted key management system.  
-- File encryption, file decryption, keys and access to keys to other users are managed from the client side.
-- Files are encrypted during transmission and at rest with AES-256 while server has zero knowledge about file's encryption.
+### ✅ **Client-Side End-to-End Encrypted**  
+- Files are encrypted during transmission and at rest on server with AES-256.
+- File encryption and file decryption for user and shared users are managed from the client side.
+- This is achieved with key management system to encrypt the AES-256 encryption key with RSA-2048.
+- KMS takes care of decryption of AES-256 encryption key and distribution of keys to other users.
+- KMS been added to replicate trusted key management system unlike the traditional server-side key management system.
 
 ### ✅ **Secure File Sharing**  
 - Share files with specific users with configurable **view** or **download** permissions.  
