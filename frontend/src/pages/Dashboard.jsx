@@ -62,21 +62,19 @@ function Dashboard() {
 
         {user?.role !== 'GUEST' && (
           <div className="bg-white shadow rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">Upload File</h2>
-            <form onSubmit={handleUpload} className="space-y-4">
-              <div>
-                <input
-                  type="file"
-                  onChange={handleFileSelect}
-                  disabled={uploadLoading}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100"
-                />
-              </div>
+            <h2 className="text-xl font-semibold mb-4 text-center">Upload File</h2>
+            <form onSubmit={handleUpload} className="flex items-center justify-center space-x-4">
+              <input
+                type="file"
+                onChange={handleFileSelect}
+                disabled={uploadLoading}
+                className="text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100"
+              />
               <button
                 type="submit"
                 disabled={!selectedFile || uploadLoading}
