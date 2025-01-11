@@ -13,4 +13,5 @@ COPY . .
 
 EXPOSE 3000
 
+# Use React's start script with HTTPS
 CMD ["npm", "start"]

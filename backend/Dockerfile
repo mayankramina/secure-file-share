@@ -17,7 +17,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application
 COPY . .
 
+# Create directory for encrypted files
+RUN mkdir -p encrypted_files
+
+# Make manage.py executable
+RUN chmod +x manage.py
+
 EXPOSE 8000
 
-# Use Django's SSL development server
-CMD ["python", "manage.py", "runsslserver", "0.0.0.0:8000"]
+# Change: Use absolute paths for cert and key
+CMD ["python", "manage.py", "runsslserver", "0.0.0.0:8000", "--cert", "/app/certs/cert.pem", "--key", "/app/certs/key.pem"]

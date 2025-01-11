@@ -35,6 +35,6 @@ coverage.xml
 
 # SSL
 *.pem
-
+certs/
 # Encrypted files directory
 encrypted_files/
