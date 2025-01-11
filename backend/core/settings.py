@@ -195,3 +195,8 @@ MFA_ISSUER_NAME = os.getenv('MFA_ISSUER_NAME', 'YourApp')
 CSRF_TRUSTED_ORIGINS = [
     "https://localhost:3000",
 ]
+
+# Allow larger files (50MB)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+UPLOAD_DIR = 'encrypted_files'  # Directory for storing encrypted files
