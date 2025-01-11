@@ -1,43 +1,24 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getFileDetails } from "../store/fileSlice";
+import { getFileDetails, fetchFileShares } from "../store/fileSlice";
 import { logout } from "../store/authSlice";
 import api from "../utils/api";
 import { base642buf } from "../utils/crypto";
-
-const Header = ({ navigate, handleLogout }) => (
-  <header className="bg-white shadow">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-        <p className="text-2xl text-bold text-gray-900">File Details</p>
-      <div className="flex flex-inline ">
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="text-xl underline  text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 pr-4"
-        >
-          {"Go to Dashboard"}
-        </button>
-      <button
-        onClick={handleLogout}
-        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-      >
-        Logout
-      </button>
-      </div>
-    </div>
-  </header>
-);
+import Header from "../components/common/Header";
+import ShareManagement from "../components/files/ShareManagement";
 
 function File() {
   const { fileId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { currentFile, loading } = useSelector((state) => state.files);
+  const { currentFile, loading, shareLoading } = useSelector((state) => state.files);
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (fileId) {
       dispatch(getFileDetails(fileId));
+      dispatch(fetchFileShares(fileId));
     }
   }, [dispatch, fileId]);
 
@@ -117,7 +98,7 @@ function File() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header navigate={navigate} handleLogout={handleLogout} />
+        <Header title={"File Details"} navigate={navigate} handleLogout={handleLogout} />
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
           <p className="text-gray-500">Loading...</p>
         </div>
@@ -128,7 +109,7 @@ function File() {
   if (!currentFile) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header navigate={navigate} handleLogout={handleLogout} />
+        <Header title={"File Details"} navigate={navigate} handleLogout={handleLogout} />
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
           <p className="text-gray-500">File not found</p>
         </div>
@@ -138,9 +119,7 @@ function File() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header navigate={navigate} handleLogout={handleLogout} />
-
-      {/* Main content */}
+      <Header title={"File Details"}  navigate={navigate} handleLogout={handleLogout} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg p-6">
           <div className="mb-6">
@@ -180,6 +159,12 @@ function File() {
               {downloading ? "Downloading..." : "Download File"}
             </button>
           </div>
+          <ShareManagement
+            fileId={fileId}
+            shares={currentFile?.shares}
+            shareLoading={shareLoading}
+            dispatch={dispatch}
+          />
         </div>
       </main>
     </div>

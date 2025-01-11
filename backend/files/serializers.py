@@ -26,6 +26,9 @@ class FileShareSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at')
 
 class FileShareCreateSerializer(serializers.ModelSerializer):
+    shared_with_username = serializers.CharField()
+    permission_type = serializers.ChoiceField(choices=['VIEW', 'DOWNLOAD'])
+
     class Meta:
         model = FileShare
-        fields = ('username', 'permission_type')
+        fields = ['shared_with_username', 'permission_type']

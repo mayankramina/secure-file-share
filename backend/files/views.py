@@ -95,13 +95,16 @@ def add_share(request, file_id):
     serializer = FileShareCreateSerializer(data=request.data)
     if serializer.is_valid():
         FileShare.objects.create(
-            file_id=file_id,
-            shared_with_username=serializer.validated_data['username'],
+            file=request.file,
+            shared_with_username=serializer.validated_data['shared_with_username'],
             permission_type=serializer.validated_data['permission_type'],
             shared_by=request.user
         )
-        return Response({'message': 'Share created successfully'}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_201_CREATED)
+    return Response(
+        {'error': serializer.errors},
+        status=status.HTTP_400_BAD_REQUEST
+    )
 
 @api_view(['PUT'])
 @jwt_required

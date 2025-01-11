@@ -61,12 +61,63 @@ export const uploadFile = createAsyncThunk(
   }
 );
 
+export const fetchFileShares = createAsyncThunk(
+  'files/fetchFileShares',
+  async (fileId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/files/${fileId}/shares/list`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
+export const addFileShare = createAsyncThunk(
+  'files/addFileShare',
+  async ({ fileId, username, permission_type }, { rejectWithValue }) => {
+    try {
+      await api.post(`/files/${fileId}/shares/add`, {
+        shared_with_username: username,
+        permission_type
+      });
+    } catch (error) {
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
+export const updateFileShare = createAsyncThunk(
+  'files/updateFileShare',
+  async ({ fileId, shareId, permission_type }, { rejectWithValue }) => {
+    try {
+      await api.put(`/files/${fileId}/shares/${shareId}`, {
+        permission_type
+      });
+    } catch (error) {
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
+export const deleteFileShare = createAsyncThunk(
+  'files/deleteFileShare',
+  async ({ fileId, shareId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/files/${fileId}/shares/${shareId}/delete`);
+    } catch (error) {
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
 const initialState = {
   files: [],
   currentFile: null,
   loading: false,
   uploadLoading: false,
-  error: null
+  error: null,
+  shareLoading: false,
 };
 
 const fileSlice = createSlice({
@@ -118,6 +169,60 @@ const fileSlice = createSlice({
       })
       .addCase(uploadFile.rejected, (state, action) => {
         state.uploadLoading = false;
+        state.error = action.payload?.error;
+      })
+      // Fetch Shares
+      .addCase(fetchFileShares.pending, (state) => {
+        state.shareLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchFileShares.fulfilled, (state, action) => {
+        state.shareLoading = false;
+        if (state.currentFile) {
+          state.currentFile.shares = action.payload;
+        }
+      })
+      .addCase(fetchFileShares.rejected, (state, action) => {
+        state.shareLoading = false;
+        state.error = action.payload?.error;
+      })
+      
+      // Add Share
+      .addCase(addFileShare.pending, (state) => {
+        state.shareLoading = true;
+        state.error = null;
+      })
+      .addCase(addFileShare.fulfilled, (state) => {
+        state.shareLoading = false;
+      })
+      .addCase(addFileShare.rejected, (state, action) => {
+        state.shareLoading = false;
+        state.error = action.payload?.error;
+      })
+      
+      // Update Share
+      .addCase(updateFileShare.pending, (state) => {
+        state.shareLoading = true;
+        state.error = null;
+      })
+      .addCase(updateFileShare.fulfilled, (state) => {
+        state.shareLoading = false;
+      })
+      .addCase(updateFileShare.rejected, (state, action) => {
+        state.shareLoading = false;
+        state.error = action.payload?.error;
+      })
+      
+      // Delete Share
+      .addCase(deleteFileShare.pending, (state) => {
+        state.shareLoading = true;
+        state.error = null;
+      })
+      .addCase(deleteFileShare.fulfilled, (state) => {
+        state.shareLoading = false;
+      })
+      .addCase(deleteFileShare.rejected, (state, action) => {
+        state.shareLoading = false;
         state.error = action.payload?.error;
       });
   }
