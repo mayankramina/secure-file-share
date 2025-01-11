@@ -20,8 +20,4 @@ openssl req -x509 -newkey rsa:4096 \
     -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" \
     -addext "subjectAltName = DNS:localhost,IP:127.0.0.1"
 
-# Set appropriate permissions
-chmod 644 backend/certs/cert.pem backend/certs/key.pem
-chmod 644 frontend/certs/cert.pem frontend/certs/key.pem
-
 echo "SSL certificates generated successfully!" 
