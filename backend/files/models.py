@@ -2,6 +2,7 @@ from django.db import models
 from users.models import User
 from django.utils import timezone
 import uuid
+from users.constants import PERM_VIEW, PERMISSION_CHOICES
 
 class File(models.Model):
     file_name = models.CharField(max_length=255)
@@ -26,11 +27,6 @@ class File(models.Model):
         return f"{self.file_name} (uploaded by {self.uploaded_by.username})"
 
 class FileShare(models.Model):
-    PERMISSION_CHOICES = [
-        ('VIEW', 'View'),
-        ('DOWNLOAD', 'Download'),
-    ]
-
     file = models.ForeignKey(
         'File',  # Using string to avoid circular import
         on_delete=models.CASCADE,
@@ -48,7 +44,7 @@ class FileShare(models.Model):
     permission_type = models.CharField(
         max_length=8,
         choices=PERMISSION_CHOICES,
-        default='VIEW'
+        default=PERM_VIEW
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

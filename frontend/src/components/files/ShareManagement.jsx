@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchFileShares, addFileShare, updateFileShare, deleteFileShare } from "../../store/fileSlice";
 import { useDispatch, useSelector } from 'react-redux';
+import { sanitizeInput } from '../../utils/sanitize';
 
 const ShareManagement = ({ fileId }) => {
   const dispatch = useDispatch();
@@ -45,6 +46,10 @@ const ShareManagement = ({ fileId }) => {
     await dispatch(fetchFileShares(fileId));
   };
 
+  const handleUsernameChange = (e) => {
+    setUsername(sanitizeInput(e.target.value));
+  };
+
   return (
     <div className="mt-8 space-y-6">
       <h3 className="text-lg font-medium">Share Management</h3>
@@ -54,7 +59,7 @@ const ShareManagement = ({ fileId }) => {
         <input
           type="text"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={handleUsernameChange}
           placeholder="Enter username"
           className="flex-1 rounded-md border border-gray-300 px-3 py-2"
         />

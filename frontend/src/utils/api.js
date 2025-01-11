@@ -2,6 +2,7 @@ import axios from 'axios';
 import { store } from '../store';
 import { logout, setMFAEnabled, setAuthenticated } from '../store/authSlice';
 import { toast } from 'react-toastify';
+import { getAndClearInitialUrl } from './urlStorage';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'https://localhost:8000',
@@ -34,23 +35,25 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // Update auth states for user details and login endpoints
-    if (response.config.url.includes('/users/me')){
+    if( response.config.url.includes('/users/auth/login')) {
       store.dispatch(setAuthenticated(true));
-      store.dispatch(setMFAEnabled(true));
     }
     if(response.config.url.includes('/users/auth/mfa/verify')){
       console.log('MFA verified');
       store.dispatch(setAuthenticated(true));
       store.dispatch(setMFAEnabled(true));
       sessionStorage.setItem('isMFAVerified', 'true');
+      const initialUrl = getAndClearInitialUrl();
+      window.location.href = initialUrl ||'/';
     }
     if(response.config.url.includes('/users/auth/mfa/disable')){
       store.dispatch(setAuthenticated(true));
       store.dispatch(setMFAEnabled(false));
       sessionStorage.setItem('isMFAVerified', 'false');
     }
-    if( response.config.url.includes('/users/auth/login')) {
+    if (response.config.url.includes('/users/me')){
       store.dispatch(setAuthenticated(true));
+      store.dispatch(setMFAEnabled(true));
     }
     // Show success toast if message exists in response
     if (response.data?.message) {
@@ -60,6 +63,9 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Show error toast if error exists in response
+    const errorMessage = error.response?.data?.error;
+    errorMessage && toast.error(errorMessage);
     if (error.response?.status === 401) {
       // Any 401 means user needs to login again
       store.dispatch(logout());
@@ -78,11 +84,6 @@ api.interceptors.response.use(
         window.location.href = '/mfa';
       }
     }
-
-    // Show error toast if error exists in response
-    const errorMessage = error.response?.data?.error;
-    errorMessage && toast.error(errorMessage);
-
     return Promise.reject(error);
   }
 );

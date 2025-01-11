@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { sanitizeInput } from '../utils/sanitize';
 
 function MFASetup() {
   const [qrCode, setQrCode] = useState('');
@@ -34,6 +35,10 @@ function MFASetup() {
     }
   };
 
+  const handleChange = (e) => {
+    setToken(sanitizeInput(e.target.value).replace(/[^0-9]/g, '')); // Only allow numbers
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
@@ -66,7 +71,7 @@ function MFASetup() {
                 id="token"
                 type="text"
                 value={token}
-                onChange={(e) => setToken(e.target.value)}
+                onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Enter 6-digit code"
                 required

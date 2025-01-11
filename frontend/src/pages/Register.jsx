@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
+import { sanitizeInput } from '../utils/sanitize';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -13,7 +14,7 @@ function Register() {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: sanitizeInput(e.target.value)
     });
   };
 

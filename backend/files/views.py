@@ -11,11 +11,14 @@ from .serializers import FileSerializer, FileUploadSerializer, FileShareSerializ
 import base64
 from django.utils import timezone
 from datetime import timedelta
+from users.constants import ROLE_ADMIN, ROLE_USER, ROLE_GUEST
+from users.constants import PERM_VIEW, PERM_DOWNLOAD
+from utils.error_handling import format_serializer_errors
 
 @api_view(['GET'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER')  
+@role_required(ROLE_ADMIN, ROLE_USER)  
 def list_files(request):
     files = File.objects.filter(uploaded_by=request.user)
     serializer = FileSerializer(files, many=True)
@@ -24,39 +27,42 @@ def list_files(request):
 @api_view(['POST'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER')  
+@role_required(ROLE_ADMIN, ROLE_USER)  
 def upload_file(request):
     serializer = FileUploadSerializer(data=request.data)
-    if serializer.is_valid():
-        # Create upload directory if it doesn't exist
-        upload_path = os.path.join(settings.BASE_DIR, settings.UPLOAD_DIR)
-        os.makedirs(upload_path, exist_ok=True)
-
-        # Generate unique filename
-        file_obj = request.FILES['file']
-        unique_filename = f"{uuid.uuid4()}{os.path.splitext(file_obj.name)[1]}"
-        file_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
-        full_path = os.path.join(settings.BASE_DIR, file_path)
-
-        # Save file
-        with open(full_path, 'wb+') as destination:
-            for chunk in file_obj.chunks():
-                destination.write(chunk)
-
-        # Create file record
-        File.objects.create(
-            file_name=serializer.validated_data['file_name'],
-            file_path=file_path,
-            encrypted_key=serializer.validated_data['encrypted_key'],
-            uploaded_by=request.user
+    if not serializer.is_valid():
+        return Response(
+            {'error': format_serializer_errors(serializer.errors)},
+            status=status.HTTP_400_BAD_REQUEST
         )
-        return Response({'message': 'File uploaded successfully'}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Create upload directory if it doesn't exist
+    upload_path = os.path.join(settings.BASE_DIR, settings.UPLOAD_DIR)
+    os.makedirs(upload_path, exist_ok=True)
+
+    # Generate unique filename
+    file_obj = request.FILES['file']
+    unique_filename = f"{uuid.uuid4()}{os.path.splitext(file_obj.name)[1]}"
+    file_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
+    full_path = os.path.join(settings.BASE_DIR, file_path)
+
+    # Save file
+    with open(full_path, 'wb+') as destination:
+        for chunk in file_obj.chunks():
+            destination.write(chunk)
+
+    # Create file record
+    File.objects.create(
+        file_name=serializer.validated_data['file_name'],
+        file_path=file_path,
+        encrypted_key=serializer.validated_data['encrypted_key'],
+        uploaded_by=request.user
+    )
+    return Response({'message': 'File uploaded successfully'}, status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER', 'GUEST')  
+@role_required(ROLE_ADMIN, ROLE_USER, ROLE_GUEST)  
 @is_file_present
 @has_file_access()
 def get_file_details(request, file_id):
@@ -66,7 +72,7 @@ def get_file_details(request, file_id):
 @api_view(['POST'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER', 'GUEST')
+@role_required(ROLE_ADMIN, ROLE_USER, ROLE_GUEST)
 @is_file_present
 @has_file_access('DOWNLOAD')
 def download_file(request, file_id):
@@ -84,7 +90,7 @@ def download_file(request, file_id):
 @api_view(['GET'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER')
+@role_required(ROLE_ADMIN, ROLE_USER)
 @is_file_present
 @is_my_file
 def list_file_shares(request, file_id):
@@ -95,29 +101,31 @@ def list_file_shares(request, file_id):
 @api_view(['POST'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER')
+@role_required(ROLE_ADMIN, ROLE_USER)
 @is_file_present
 @is_my_file
 @is_file_not_already_shared
 def add_share(request, file_id):
     serializer = FileShareCreateSerializer(data=request.data, context={'request': request})
-    if serializer.is_valid():
-        FileShare.objects.create(
-            file=request.file,
-            shared_with_username=serializer.validated_data['shared_with_username'],
-            permission_type=serializer.validated_data['permission_type'],
-            shared_by=request.user
+    if not serializer.is_valid():
+        return Response(
+            {'error': format_serializer_errors(serializer.errors)},
+            status=status.HTTP_400_BAD_REQUEST
         )
-        return Response(status=status.HTTP_201_CREATED)
-    return Response(
-        {'error': serializer.errors},
-        status=status.HTTP_400_BAD_REQUEST
+    if serializer.validated_data['permission_type'] not in [PERM_VIEW, PERM_DOWNLOAD]:
+        return Response({'error': 'Invalid permission type'}, status=status.HTTP_400_BAD_REQUEST)
+    FileShare.objects.create(
+        file=request.file,
+        shared_with_username=serializer.validated_data['shared_with_username'],
+        permission_type=serializer.validated_data['permission_type'],
+        shared_by=request.user
     )
+    return Response(status=status.HTTP_201_CREATED)
 
 @api_view(['PUT'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER')
+@role_required(ROLE_ADMIN, ROLE_USER)
 @is_file_present
 @is_my_file
 @is_share_present
@@ -132,7 +140,7 @@ def update_share(request, file_id, share_id):
 @api_view(['DELETE'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER')
+@role_required(ROLE_ADMIN, ROLE_USER)
 @is_file_present
 @is_my_file
 @is_share_present
@@ -143,7 +151,7 @@ def delete_share(request, file_id, share_id):
 @api_view(['GET'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER', 'GUEST')
+@role_required(ROLE_ADMIN, ROLE_USER, ROLE_GUEST)
 def list_my_shares(request):
     """Get list of files shared with the current user"""
     shares = FileShare.objects.filter(
@@ -156,7 +164,7 @@ def list_my_shares(request):
 @api_view(['GET'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER', 'GUEST')
+@role_required(ROLE_ADMIN, ROLE_USER, ROLE_GUEST)
 @is_file_present
 @has_file_access()
 def get_file_permission(request, file_id):
@@ -181,7 +189,7 @@ def get_file_permission(request, file_id):
 @api_view(['POST'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER')
+@role_required(ROLE_ADMIN, ROLE_USER)
 @is_file_present
 @is_my_file
 def generate_link(request, file_id):
@@ -211,7 +219,7 @@ def generate_link(request, file_id):
 @api_view(['POST'])
 @jwt_required
 @mfa_enabled
-@role_required('ADMIN', 'USER', 'GUEST')
+@role_required(ROLE_ADMIN, ROLE_USER, ROLE_GUEST)
 @is_link_token_valid 
 @has_file_access()    
 def verify_link(request):

@@ -12,6 +12,8 @@ import qrcode
 import base64
 from io import BytesIO
 from .decorators import jwt_required, mfa_enabled, mfa_disabled
+from utils.sanitize import sanitize_input
+from utils.error_handling import format_serializer_errors
 
 
 @api_view(['POST'])
@@ -25,17 +27,8 @@ def register(request):
                 status=status.HTTP_201_CREATED
             )
         
-        # Flatten serializer errors into a single string
-        error_messages = []
-        for field, errors in serializer.errors.items():
-            # Handle both string and list errors
-            if isinstance(errors, list):
-                error_messages.append(' '.join(errors))
-            else:
-                error_messages.append(errors)
-                
         return Response(
-            {'error': ' '.join(error_messages)},
+            {'error': format_serializer_errors(serializer.errors)},
             status=status.HTTP_400_BAD_REQUEST
         )
     except IntegrityError:
@@ -186,7 +179,10 @@ def logout(request):
 @mfa_enabled
 def verify_mfa(request):
     try:
-        totp_code = request.data.get('token')
+        # Sanitize MFA token - no spaces allowed
+        totp_code = sanitize_input(request.data.get('token', ''), allow_spaces=False)
+        # Only allow digits
+        totp_code = ''.join(filter(str.isdigit, totp_code))
         
         if not totp_code:
             return Response(

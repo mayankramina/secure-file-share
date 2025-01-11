@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from .constants import USER_ROLE_CHOICES, DEFAULT_ROLE, ROLE_ADMIN
 
 class UserManager(BaseUserManager):
     def create_user(self, username, password, role):
@@ -16,11 +17,10 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, username, password):
-        # This method is needed to create admin users
         user = self.create_user(
             username=username,
             password=password,
-            role='ADMIN'
+            role=ROLE_ADMIN
         )
         user.is_staff = True
         user.is_superuser = True
@@ -31,12 +31,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     role = models.CharField(
         max_length=5,
-        choices=[
-            ('ADMIN', 'Admin'),
-            ('USER', 'User'),
-            ('GUEST', 'Guest')
-        ],
-        default='USER'
+        choices=USER_ROLE_CHOICES,
+        default=DEFAULT_ROLE
     )
     mfa_secret = models.CharField(max_length=32, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -57,12 +53,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_staff(self):
-        # Only users with ADMIN role can access Django admin
-        return self.role == 'ADMIN'
+        return self.role == ROLE_ADMIN
 
     @is_staff.setter
     def is_staff(self, value):
         if value:
-            self.role = 'ADMIN'
+            self.role = ROLE_ADMIN
         else:
-            self.role = 'USER'
+            self.role = DEFAULT_ROLE

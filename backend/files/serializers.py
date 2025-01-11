@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import File, FileShare
+from utils.sanitize import sanitize_input
+from users.constants import PERM_VIEW, PERM_DOWNLOAD
 
 class FileSerializer(serializers.ModelSerializer):
     uploaded_by_username = serializers.CharField(source='uploaded_by.username', read_only=True)
@@ -17,6 +19,10 @@ class FileUploadSerializer(serializers.ModelSerializer):
         model = File
         fields = ('file', 'file_name', 'encrypted_key')
 
+    def validate_file_name(self, value):
+        # Sanitize filename - allow spaces
+        return sanitize_input(value, allow_spaces=True)
+
 class FileShareSerializer(serializers.ModelSerializer):
     file_name = serializers.CharField(source='file.file_name', read_only=True)
     
@@ -27,13 +33,15 @@ class FileShareSerializer(serializers.ModelSerializer):
 
 class FileShareCreateSerializer(serializers.ModelSerializer):
     shared_with_username = serializers.CharField()
-    permission_type = serializers.ChoiceField(choices=['VIEW', 'DOWNLOAD'])
+    permission_type = serializers.ChoiceField(choices=[PERM_VIEW, PERM_DOWNLOAD])
 
     class Meta:
         model = FileShare
         fields = ['shared_with_username', 'permission_type']
 
     def validate_shared_with_username(self, value):
+        # Sanitize username - no spaces allowed
+        value = sanitize_input(value, allow_spaces=False)
         request = self.context.get('request')
         if request and request.user.username == value:
             raise serializers.ValidationError("You cannot share a file with yourself")
