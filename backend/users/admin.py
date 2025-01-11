@@ -18,8 +18,9 @@ class CustomUserAdmin(UserAdmin):
             'fields': (
                 'role',
                 'is_active',
-                'is_staff',
                 'is_superuser',
+                'groups',
+                'user_permissions',
             )
         }),
         ('MFA Settings', {
@@ -38,7 +39,6 @@ class CustomUserAdmin(UserAdmin):
                 'password1',
                 'password2',
                 'role',
-                'is_staff',
                 'is_active'
             )
         }),

@@ -1,8 +1,24 @@
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../../store/authSlice";
+import api from "../../utils/api";
+import { useNavigate } from "react-router-dom";
 
-const Header = ({ navigate, handleLogout, title}) => {
+const Header = ({ title }) => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const isDashboard = window.location.pathname === "/dashboard";
-  const { username, role } = useSelector((state) => state.auth.user);
+  const { username } = useSelector((state) => state.auth.user);
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/users/auth/logout");
+      sessionStorage.removeItem("isMFAVerified");
+      dispatch(logout());
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <header className="bg-white shadow">
@@ -18,12 +34,9 @@ const Header = ({ navigate, handleLogout, title}) => {
             </button>
           )}
           <div className="flex items-center mr-4">
-            <span className="text-gray-600">{username}</span>
-            {isDashboard && role === "GUEST" && (
-              <span className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-sm rounded-full">
-                Guest
-              </span>
-            )}
+            <span className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-sm rounded-full">
+              {username}
+            </span>
           </div>
           <button
             onClick={handleLogout}

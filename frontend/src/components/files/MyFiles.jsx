@@ -1,16 +1,18 @@
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchFiles } from '../../store/fileSlice';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchFiles } from "../../store/fileSlice";
+import { useNavigate } from "react-router-dom";
 
 const MyFiles = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { files, loading } = useSelector((state) => state.files);
+  const { files, loading, uploadLoading } = useSelector((state) => state.files);
 
   useEffect(() => {
-    dispatch(fetchFiles());
-  }, [dispatch]);
+    if (!uploadLoading) {
+      dispatch(fetchFiles());
+    }
+  }, [dispatch, uploadLoading]);
 
   if (loading) return <p>Loading...</p>;
 
@@ -44,4 +46,4 @@ const MyFiles = () => {
   );
 };
 
-export default MyFiles; 
+export default MyFiles;

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getFileDetails, fetchFilePermission, clearCurrentFile } from "../store/fileSlice";
-import { logout } from "../store/authSlice";
 import api from "../utils/api";
 import { base642buf } from "../utils/crypto";
 import Header from "../components/common/Header";
@@ -10,7 +9,6 @@ import ShareManagement from "../components/files/ShareManagement";
 
 function File() {
   const { fileId } = useParams();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { currentFile, loading } = useSelector((state) => state.files);
   const [downloading, setDownloading] = useState(false);
@@ -24,17 +22,6 @@ function File() {
       dispatch(clearCurrentFile());
     };
   }, [dispatch, fileId]);
-
-  const handleLogout = async () => {
-    try {
-      await api.post("/users/auth/logout");
-      sessionStorage.removeItem("isMFAVerified");
-      dispatch(logout());
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
 
   const handleDownload = async () => {
     try {
@@ -102,7 +89,7 @@ function File() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title={"File Details"} navigate={navigate} handleLogout={handleLogout} />
+        <Header title={"File Details"}  />
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
           <p className="text-gray-500">Loading...</p>
         </div>
@@ -113,7 +100,7 @@ function File() {
   if (!currentFile) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title={"File Details"} navigate={navigate} handleLogout={handleLogout} />
+        <Header title={"File Details"}/>
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
           <p className="text-gray-500">File not found</p>
         </div>
@@ -123,7 +110,7 @@ function File() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title={"File Details"} navigate={navigate} handleLogout={handleLogout} />
+      <Header title={"File Details"} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg p-6">
           <div className="mb-6">
