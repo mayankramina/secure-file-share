@@ -13,6 +13,7 @@ import MFALogin from "./pages/MFALogin";
 import Dashboard from "./pages/Dashboard";
 import File from "./pages/File";
 import { fetchUserDetails } from "./store/authSlice";
+import ShareLink from "./pages/ShareLink";
 
 function App() {
   const dispatch = useDispatch();
@@ -70,6 +71,14 @@ function App() {
             element={
               <AuthAndMFAProtectedRoute>
                 <File />
+              </AuthAndMFAProtectedRoute>
+            }
+          />
+          <Route
+            path="/share/:token"
+            element={
+              <AuthAndMFAProtectedRoute>
+                <ShareLink />
               </AuthAndMFAProtectedRoute>
             }
           />

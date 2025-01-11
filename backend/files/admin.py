@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import File, FileShare
+from .models import File, FileShare, ShareableLink
 
 class FileShareInline(admin.TabularInline):
     model = FileShare
@@ -27,3 +27,16 @@ class FileShareAdmin(admin.ModelAdmin):
     search_fields = ('file__file_name', 'shared_with_username', 'shared_by__username')
     readonly_fields = ('created_at',)
     ordering = ('-created_at',)
+
+@admin.register(ShareableLink)
+class ShareableLinkAdmin(admin.ModelAdmin):
+    list_display = ('file', 'token', 'expiration_time', 'created_by', 'created_at', 'is_expired')
+    list_filter = ('created_at', 'expiration_time')
+    search_fields = ('file__file_name', 'token', 'created_by__username')
+    readonly_fields = ('created_at',)
+    ordering = ('-created_at',)
+
+    def is_expired(self, obj):
+        return obj.is_expired
+    is_expired.boolean = True
+    is_expired.short_description = 'Expired'

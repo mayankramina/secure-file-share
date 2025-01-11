@@ -6,6 +6,7 @@ import api from "../utils/api";
 import { base642buf } from "../utils/crypto";
 import Header from "../components/common/Header";
 import ShareManagement from "../components/files/ShareManagement";
+import LinkGeneration from "../components/files/LinkGeneration";
 
 function File() {
   const { fileId } = useParams();
@@ -155,7 +156,10 @@ function File() {
           )}
 
           {currentFile?.permission?.is_owner && (
-            <ShareManagement fileId={fileId} />
+            <>
+              <LinkGeneration fileId={fileId} />
+              <ShareManagement fileId={fileId} />
+            </>
           )}
         </div>
       </main>

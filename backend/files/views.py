@@ -5,10 +5,12 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from users.decorators import jwt_required, mfa_enabled, role_required
-from .decorators import is_file_present, is_my_file, is_share_present, is_file_not_already_shared, has_file_access
-from .models import File, FileShare
+from .decorators import is_file_present, is_my_file, is_share_present, is_file_not_already_shared, has_file_access, is_link_token_valid
+from .models import File, FileShare, ShareableLink
 from .serializers import FileSerializer, FileUploadSerializer, FileShareSerializer, FileShareCreateSerializer, SharedFileSerializer
 import base64
+from django.utils import timezone
+from datetime import timedelta
 
 @api_view(['GET'])
 @jwt_required
@@ -175,3 +177,52 @@ def get_file_permission(request, file_id):
         'is_owner': False,
         'permission_type': share.permission_type
     })
+
+@api_view(['POST'])
+@jwt_required
+@mfa_enabled
+@role_required('ADMIN', 'USER')
+@is_file_present
+@is_my_file
+def generate_link(request, file_id):
+    """Generate a shareable link for a file"""
+    try:
+        expiration_minutes = request.data.get('expiration_minutes', settings.DEFAULT_EXPIRATION_MINUTES)
+        expiration_time = timezone.now() + timedelta(minutes=expiration_minutes)
+
+        # Create new shareable link
+        link = ShareableLink.objects.create(
+            file=request.file,
+            created_by=request.user,
+            expiration_time=expiration_time
+        )
+        
+        return Response({
+            'token': link.token,
+            'expiration_time': expiration_time
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response(
+            {'error': 'Failed to generate link'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+@jwt_required
+@mfa_enabled
+@role_required('ADMIN', 'USER', 'GUEST')
+@is_link_token_valid 
+@has_file_access()    
+def verify_link(request):
+    """Verify a shareable link and return file details"""
+    try:
+        return Response({
+            'file_id': request.file.id
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': 'Failed to verify link'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

@@ -12,4 +12,6 @@ urlpatterns = [
     path('<int:file_id>/shares/<int:share_id>', views.update_share, name='update_share'),
     path('<int:file_id>/permission', views.get_file_permission, name='get_file_permission'),
     path('shares/me', views.list_my_shares, name='list_my_shares'),
+    path('<int:file_id>/links/generate', views.generate_link, name='generate_link'),
+    path('links/verify', views.verify_link, name='verify_link'),
 ] 

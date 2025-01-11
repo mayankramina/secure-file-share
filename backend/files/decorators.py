@@ -1,7 +1,8 @@
 from functools import wraps
 from rest_framework.response import Response
 from rest_framework import status
-from .models import File, FileShare
+from .models import File, FileShare, ShareableLink
+from django.utils import timezone
 
 def is_file_present(view_func):
     @wraps(view_func)
@@ -69,10 +70,12 @@ def has_file_access(required_permission=None):
     """
     def decorator(view_func):
         @wraps(view_func)
-        def wrapped(request, file_id, *args, **kwargs):
+        def wrapped(request, *args, **kwargs):
+
+            file_id = request.file.id
             # If user is the owner, they have full access
             if request.file.uploaded_by_id == request.user.id:
-                return view_func(request, file_id, *args, **kwargs)
+                return view_func(request, *args, **kwargs)
             
             # Check if file is shared with the user
             share = FileShare.objects.filter(
@@ -93,6 +96,38 @@ def has_file_access(required_permission=None):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            return view_func(request, file_id, *args, **kwargs)
+            return view_func(request, *args, **kwargs)
         return wrapped
     return decorator 
+
+def is_link_token_valid(view_func):
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        token = request.data.get('token')
+        
+        if not token:
+            return Response(
+                {'error': 'Token is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        try:
+            link = ShareableLink.objects.get(token=token)
+            
+            # Use the model's is_expired property
+            if link.is_expired:
+                return Response(
+                    {'error': 'Link has expired'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+            request.file = link.file  # Set the file for subsequent decorators
+            return view_func(request, *args, **kwargs)
+            
+        except ShareableLink.DoesNotExist:
+            return Response(
+                {'error': 'Invalid or expired link'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+    return wrapped 

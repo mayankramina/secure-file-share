@@ -208,3 +208,5 @@ ADMIN_URL = os.getenv('ADMIN_URL', 'admin/')  # Customize admin URL
 ADMIN_SITE_HEADER = "Your App Admin"
 ADMIN_SITE_TITLE = "Your App Admin Portal"
 ADMIN_INDEX_TITLE = "Welcome to Your App Admin Portal"
+
+DEFAULT_EXPIRATION_MINUTES = 60 
