@@ -17,7 +17,7 @@ const initialState = {
   isAuthenticated: false,
   isMFAEnabled: false,
   user: null,
-  loading: false,
+  loading: true,
   error: null
 };
 

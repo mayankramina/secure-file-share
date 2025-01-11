@@ -8,6 +8,7 @@ from users.decorators import jwt_required, mfa_enabled
 from .decorators import is_file_present, is_my_file
 from .models import File
 from .serializers import FileSerializer, FileUploadSerializer
+import base64
 
 @api_view(['GET'])
 @jwt_required
@@ -53,7 +54,7 @@ def upload_file(request):
 @mfa_enabled
 @is_file_present
 @is_my_file
-def get_file_details(request):
+def get_file_details(request, file_id):
     serializer = FileSerializer(request.file)
     return Response(serializer.data)
 
@@ -62,11 +63,11 @@ def get_file_details(request):
 @mfa_enabled
 @is_file_present
 @is_my_file
-def download_file(request):
+def download_file(request, file_id):
     file = request.file
-    # Read the encrypted file
+    # Read the encrypted file and convert to base64
     with open(os.path.join(settings.BASE_DIR, file.file_path), 'rb') as f:
-        encrypted_content = f.read()
+        encrypted_content = base64.b64encode(f.read()).decode('utf-8')
     
     return Response({
         'file_name': file.file_name,

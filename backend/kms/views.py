@@ -66,6 +66,7 @@ def decrypt_string(request):
             backend=default_backend()
         )
 
+        # The encrypted data is already in base64 format
         encrypted_data = base64.b64decode(request.data['encrypted'])
         decrypted_data = private_key.decrypt(
             encrypted_data,
@@ -76,8 +77,12 @@ def decrypt_string(request):
             )
         )
 
-        return Response({'decrypted': decrypted_data.decode()})
+        # Return the decrypted data in base64 format
+        return Response({
+            'decrypted': base64.b64encode(decrypted_data).decode('utf-8')
+        })
     except Exception as e:
+        print(f"Decryption error: {str(e)}")  # Add better error logging
         return Response(
             {'error': 'Decryption failed'},
             status=status.HTTP_400_BAD_REQUEST
