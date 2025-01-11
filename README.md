@@ -23,12 +23,7 @@ cd secure-file-share
 mkdir -p frontend/certs backend/certs  
 
 # Generate a single SSL certificate  
-openssl req -x509 -newkey rsa:4096 \  
-    -keyout temp_key.pem \  
-    -out temp_cert.pem \  
-    -days 365 -nodes \  
-    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" \  
-    -addext "subjectAltName = DNS:localhost,IP:127.0.0.1"  
+openssl req -x509 -newkey rsa:4096 -keyout temp_key.pem -out temp_cert.pem -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost" -addext "subjectAltName = DNS:localhost,IP:127.0.0.1" 
 
 # Copy the certificate and key to both frontend and backend  
 cp temp_key.pem frontend/certs/key.pem  
