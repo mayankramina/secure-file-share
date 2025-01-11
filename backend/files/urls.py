@@ -6,4 +6,8 @@ urlpatterns = [
     path('upload', views.upload_file, name='upload_file'),
     path('<int:file_id>', views.get_file_details, name='get_file_details'),
     path('<int:file_id>/download', views.download_file, name='download_file'),
+    path('<int:file_id>/shares/list', views.list_shares, name='list_shares'),
+    path('<int:file_id>/shares/add', views.add_share, name='add_share'),
+    path('<int:file_id>/shares/<int:share_id>', views.update_share, name='update_share'),
+    path('<int:file_id>/shares/<int:share_id>/delete', views.delete_share, name='delete_share'),
 ] 

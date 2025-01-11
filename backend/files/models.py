@@ -23,3 +23,40 @@ class File(models.Model):
 
     def __str__(self):
         return f"{self.file_name} (uploaded by {self.uploaded_by.username})"
+
+class FileShare(models.Model):
+    PERMISSION_CHOICES = [
+        ('VIEW', 'View'),
+        ('DOWNLOAD', 'Download'),
+    ]
+
+    file = models.ForeignKey(
+        'File',  # Using string to avoid circular import
+        on_delete=models.CASCADE,
+        related_name='shares'
+    )
+    shared_with_username = models.CharField(
+        max_length=150,  # Match User model username max_length
+        db_index=True  # Add index for better query performance
+    )
+    shared_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='shared_files'
+    )
+    permission_type = models.CharField(
+        max_length=8,
+        choices=PERMISSION_CHOICES,
+        default='VIEW'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'file_shares'
+        # Ensure a file can only be shared once with a specific user
+        unique_together = ['file', 'shared_with_username']
+        # Order by most recent first
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.file.file_name} shared with {self.shared_with_username}"

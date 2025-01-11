@@ -5,9 +5,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from users.decorators import jwt_required, mfa_enabled
-from .decorators import is_file_present, is_my_file
-from .models import File
-from .serializers import FileSerializer, FileUploadSerializer
+from .decorators import is_file_present, is_my_file, is_share_present, is_file_not_already_shared
+from .models import File, FileShare
+from .serializers import FileSerializer, FileUploadSerializer, FileShareSerializer, FileShareCreateSerializer
 import base64
 
 @api_view(['GET'])
@@ -74,3 +74,55 @@ def download_file(request, file_id):
         'encrypted_content': encrypted_content,
         'encrypted_key': file.encrypted_key
     })
+
+@api_view(['GET'])
+@jwt_required
+@mfa_enabled
+@is_file_present
+@is_my_file
+def list_shares(request, file_id):
+    shares = FileShare.objects.filter(file_id=file_id)
+    serializer = FileShareSerializer(shares, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@jwt_required
+@mfa_enabled
+@is_file_present
+@is_my_file
+@is_file_not_already_shared
+def add_share(request, file_id):
+    serializer = FileShareCreateSerializer(data=request.data)
+    if serializer.is_valid():
+        FileShare.objects.create(
+            file_id=file_id,
+            shared_with_username=serializer.validated_data['username'],
+            permission_type=serializer.validated_data['permission_type'],
+            shared_by=request.user
+        )
+        return Response({'message': 'Share created successfully'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT'])
+@jwt_required
+@mfa_enabled
+@is_file_present
+@is_my_file
+@is_share_present
+def update_share(request, file_id, share_id):
+    serializer = FileShareCreateSerializer(data=request.data, partial=True)
+    if serializer.is_valid():
+        request.share.permission_type = serializer.validated_data.get('permission_type', request.share.permission_type)
+        request.share.save()
+        return Response({'message': 'Share updated successfully'})
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@jwt_required
+@mfa_enabled
+@is_file_present
+@is_my_file
+@is_share_present
+def delete_share(request, file_id, share_id):
+    request.share.delete()
+    return Response({'message': 'Share deleted successfully'})
