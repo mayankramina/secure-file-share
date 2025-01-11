@@ -40,8 +40,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     mfa_secret = models.CharField(max_length=32, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
-    # These two fields are required for Django admin
-    is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
@@ -61,3 +59,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_staff(self):
         # Only users with ADMIN role can access Django admin
         return self.role == 'ADMIN'
+
+    @is_staff.setter
+    def is_staff(self, value):
+        if value:
+            self.role = 'ADMIN'
+        else:
+            self.role = 'USER'

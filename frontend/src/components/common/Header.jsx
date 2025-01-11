@@ -7,7 +7,7 @@ const Header = ({ title }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const isDashboard = window.location.pathname === "/dashboard";
-  const { username } = useSelector((state) => state.auth.user);
+  const { user } = useSelector((state) => state.auth);
 
   const handleLogout = async () => {
     try {
@@ -35,7 +35,7 @@ const Header = ({ title }) => {
           )}
           <div className="flex items-center mr-4">
             <span className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 text-sm rounded-full">
-              {username}
+              {user?.username}
             </span>
           </div>
           <button
