@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
 function Login() {
@@ -7,6 +7,7 @@ function Login() {
     username: '',
     password: ''
   });
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -21,6 +22,7 @@ function Login() {
     setLoading(true);
     try {
         await api.post('/users/auth/login', formData);
+        navigate('/');
     } catch (error) {
       // Error handling is managed by the API interceptor
       console.error('Login failed:', error);

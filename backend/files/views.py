@@ -4,15 +4,16 @@ from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from users.decorators import jwt_required, mfa_enabled
-from .decorators import is_file_present, is_my_file, is_share_present, is_file_not_already_shared
+from users.decorators import jwt_required, mfa_enabled, role_required
+from .decorators import is_file_present, is_my_file, is_share_present, is_file_not_already_shared, has_file_access
 from .models import File, FileShare
-from .serializers import FileSerializer, FileUploadSerializer, FileShareSerializer, FileShareCreateSerializer
+from .serializers import FileSerializer, FileUploadSerializer, FileShareSerializer, FileShareCreateSerializer, SharedFileSerializer
 import base64
 
 @api_view(['GET'])
 @jwt_required
 @mfa_enabled
+@role_required('ADMIN', 'USER')  
 def list_files(request):
     files = File.objects.filter(uploaded_by=request.user)
     serializer = FileSerializer(files, many=True)
@@ -21,6 +22,7 @@ def list_files(request):
 @api_view(['POST'])
 @jwt_required
 @mfa_enabled
+@role_required('ADMIN', 'USER')  
 def upload_file(request):
     serializer = FileUploadSerializer(data=request.data)
     if serializer.is_valid():
@@ -52,8 +54,9 @@ def upload_file(request):
 @api_view(['GET'])
 @jwt_required
 @mfa_enabled
+@role_required('ADMIN', 'USER', 'GUEST')  
 @is_file_present
-@is_my_file
+@has_file_access()
 def get_file_details(request, file_id):
     serializer = FileSerializer(request.file)
     return Response(serializer.data)
@@ -61,8 +64,9 @@ def get_file_details(request, file_id):
 @api_view(['POST'])
 @jwt_required
 @mfa_enabled
+@role_required('ADMIN', 'USER', 'GUEST')
 @is_file_present
-@is_my_file
+@has_file_access('DOWNLOAD')
 def download_file(request, file_id):
     file = request.file
     # Read the encrypted file and convert to base64
@@ -78,9 +82,10 @@ def download_file(request, file_id):
 @api_view(['GET'])
 @jwt_required
 @mfa_enabled
+@role_required('ADMIN', 'USER')
 @is_file_present
 @is_my_file
-def list_shares(request, file_id):
+def list_file_shares(request, file_id):
     shares = FileShare.objects.filter(file_id=file_id)
     serializer = FileShareSerializer(shares, many=True)
     return Response(serializer.data)
@@ -88,11 +93,12 @@ def list_shares(request, file_id):
 @api_view(['POST'])
 @jwt_required
 @mfa_enabled
+@role_required('ADMIN', 'USER')
 @is_file_present
 @is_my_file
 @is_file_not_already_shared
 def add_share(request, file_id):
-    serializer = FileShareCreateSerializer(data=request.data)
+    serializer = FileShareCreateSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
         FileShare.objects.create(
             file=request.file,
@@ -109,6 +115,7 @@ def add_share(request, file_id):
 @api_view(['PUT'])
 @jwt_required
 @mfa_enabled
+@role_required('ADMIN', 'USER')
 @is_file_present
 @is_my_file
 @is_share_present
@@ -123,9 +130,48 @@ def update_share(request, file_id, share_id):
 @api_view(['DELETE'])
 @jwt_required
 @mfa_enabled
+@role_required('ADMIN', 'USER')
 @is_file_present
 @is_my_file
 @is_share_present
 def delete_share(request, file_id, share_id):
     request.share.delete()
     return Response({'message': 'Share deleted successfully'})
+
+@api_view(['GET'])
+@jwt_required
+@mfa_enabled
+@role_required('ADMIN', 'USER', 'GUEST')
+def list_my_shares(request):
+    """Get list of files shared with the current user"""
+    shares = FileShare.objects.filter(
+        shared_with_username=request.user.username
+    ).select_related('file', 'file__uploaded_by', 'shared_by')
+    
+    serializer = SharedFileSerializer(shares, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@jwt_required
+@mfa_enabled
+@role_required('ADMIN', 'USER', 'GUEST')
+@is_file_present
+@has_file_access()
+def get_file_permission(request, file_id):
+    """
+    Get user's permission for a specific file
+    """
+    if request.file.uploaded_by_id == request.user.id:
+        return Response({
+            'is_owner': True
+        })
+    
+    share = FileShare.objects.get(
+        file_id=file_id,
+        shared_with_username=request.user.username
+    )
+    
+    return Response({
+        'is_owner': False,
+        'permission_type': share.permission_type
+    })

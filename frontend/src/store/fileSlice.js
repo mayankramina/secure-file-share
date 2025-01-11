@@ -77,6 +77,11 @@ export const addFileShare = createAsyncThunk(
   'files/addFileShare',
   async ({ fileId, username, permission_type }, { rejectWithValue }) => {
     try {
+      // If permission includes download, grant KMS access first
+      if (permission_type === 'DOWNLOAD') {
+        await api.post('/kms/access/grant', { username });
+      }
+
       await api.post(`/files/${fileId}/shares/add`, {
         shared_with_username: username,
         permission_type
@@ -89,8 +94,13 @@ export const addFileShare = createAsyncThunk(
 
 export const updateFileShare = createAsyncThunk(
   'files/updateFileShare',
-  async ({ fileId, shareId, permission_type }, { rejectWithValue }) => {
+  async ({ fileId, shareId, permission_type, username }, { rejectWithValue }) => {
     try {
+      // If permission is being updated to include download, grant KMS access
+      if (permission_type === 'DOWNLOAD') {
+        await api.post('/kms/access/grant', { username });
+      }
+
       await api.put(`/files/${fileId}/shares/${shareId}`, {
         permission_type
       });
@@ -102,9 +112,36 @@ export const updateFileShare = createAsyncThunk(
 
 export const deleteFileShare = createAsyncThunk(
   'files/deleteFileShare',
-  async ({ fileId, shareId }, { rejectWithValue }) => {
+  async ({ fileId, shareId, username }, { rejectWithValue }) => {
     try {
       await api.delete(`/files/${fileId}/shares/${shareId}/delete`);
+      
+      // Always revoke KMS access when removing share
+      await api.post('/kms/access/revoke', { username });
+    } catch (error) {
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
+export const fetchFilePermission = createAsyncThunk(
+  'files/fetchFilePermission',
+  async (fileId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/files/${fileId}/permission`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
+export const fetchSharedFiles = createAsyncThunk(
+  'files/fetchSharedFiles',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/files/shares/me');
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data);
     }
@@ -113,8 +150,10 @@ export const deleteFileShare = createAsyncThunk(
 
 const initialState = {
   files: [],
+  sharedFiles: [],
   currentFile: null,
   loading: false,
+  sharedFilesLoading: false,
   uploadLoading: false,
   error: null,
   shareLoading: false,
@@ -153,7 +192,10 @@ const fileSlice = createSlice({
       })
       .addCase(getFileDetails.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentFile = action.payload;
+        state.currentFile = {
+          ...action.payload,
+          permission: null
+        };
       })
       .addCase(getFileDetails.rejected, (state, action) => {
         state.loading = false;
@@ -223,6 +265,28 @@ const fileSlice = createSlice({
       })
       .addCase(deleteFileShare.rejected, (state, action) => {
         state.shareLoading = false;
+        state.error = action.payload?.error;
+      })
+      // File Permission
+      .addCase(fetchFilePermission.fulfilled, (state, action) => {
+        if (state.currentFile) {
+          state.currentFile.permission = action.payload;
+        }
+      })
+      .addCase(fetchFilePermission.rejected, (state, action) => {
+        state.error = action.payload?.error;
+      })
+      // Shared Files
+      .addCase(fetchSharedFiles.pending, (state) => {
+        state.sharedFilesLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchSharedFiles.fulfilled, (state, action) => {
+        state.sharedFilesLoading = false;
+        state.sharedFiles = action.payload;
+      })
+      .addCase(fetchSharedFiles.rejected, (state, action) => {
+        state.sharedFilesLoading = false;
         state.error = action.payload?.error;
       });
   }

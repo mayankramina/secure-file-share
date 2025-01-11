@@ -71,6 +71,13 @@ api.interceptors.response.use(
         store.dispatch(setMFAEnabled(false));
       }
     }
+    else if (error.response?.status === 400) {
+      if (error.response.data?.mfa_already_enabled) {
+        store.dispatch(setAuthenticated(true));
+        store.dispatch(setMFAEnabled(true));
+        window.location.href = '/mfa';
+      }
+    }
 
     // Show error toast if error exists in response
     const errorMessage = error.response?.data?.error;

@@ -200,3 +200,11 @@ CSRF_TRUSTED_ORIGINS = [
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
 UPLOAD_DIR = 'encrypted_files'  # Directory for storing encrypted files
+
+# Add these settings for admin security
+ADMIN_URL = os.getenv('ADMIN_URL', 'admin/')  # Customize admin URL
+
+# Update admin site settings
+ADMIN_SITE_HEADER = "Your App Admin"
+ADMIN_SITE_TITLE = "Your App Admin Portal"
+ADMIN_INDEX_TITLE = "Welcome to Your App Admin Portal"

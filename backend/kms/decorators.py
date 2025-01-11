@@ -7,9 +7,8 @@ from .models import KeyPair
 def key_exists(view_func):
     @wraps(view_func)
     def wrapped(request, *args, **kwargs):
-        
         try:
-            KeyPair.objects.get(user=request.user)
+            KeyPair.objects.get(username=request.data.get('key_owner_username', request.user.username))
             return view_func(request, *args, **kwargs)
         except KeyPair.DoesNotExist:
             return Response(

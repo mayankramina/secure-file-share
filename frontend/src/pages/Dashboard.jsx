@@ -5,14 +5,17 @@ import { fetchFiles, uploadFile } from "../store/fileSlice";
 import { logout } from "../store/authSlice";
 import api from "../utils/api";
 import Header from "../components/common/Header";
+import MyFiles from "../components/files/MyFiles";
+import SharedFiles from "../components/files/SharedFiles";
 
 function Dashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const { files, loading, uploadLoading } = useSelector((state) => state.files);
+  const { uploadLoading } = useSelector((state) => state.files);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState("");
+  const [activeTab, setActiveTab] = useState('my-files');
 
   useEffect(() => {
     if (!uploadLoading) {
@@ -103,39 +106,34 @@ function Dashboard() {
           </form>
         </div>
 
-        {/* File List Section */}
+        {/* Files Section */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">My Files</h2>
-          {loading ? (
-            <p>Loading...</p>
-          ) : (
-            <div className="space-y-4">
-              {files.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                >
-                  <div>
-                    <h3 className="font-medium">{file.file_name}</h3>
-                    <p className="text-sm text-gray-500">
-                      Uploaded: {new Date(file.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => navigate(`/files/${file.id}`)}
-                    className="px-3 py-1 text-sm bg-gray-100 rounded-md
-                      hover:bg-gray-200 focus:outline-none focus:ring-2
-                      focus:ring-gray-500 focus:ring-offset-2"
-                  >
-                    View
-                  </button>
-                </div>
-              ))}
-              {files.length === 0 && (
-                <p className="text-center text-gray-500">No files uploaded yet</p>
-              )}
-            </div>
-          )}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('my-files')}
+                className={`${
+                  activeTab === 'my-files'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium`}
+              >
+                My Files
+              </button>
+              <button
+                onClick={() => setActiveTab('shared-files')}
+                className={`${
+                  activeTab === 'shared-files'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium`}
+              >
+                Shared with Me
+              </button>
+            </nav>
+          </div>
+
+          {activeTab === 'my-files' ? <MyFiles /> : <SharedFiles />}
         </div>
       </main>
     </div>

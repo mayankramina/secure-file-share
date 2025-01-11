@@ -1,34 +1,47 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User
+from files.models import File, FileShare
 
-class CustomUserAdmin(admin.ModelAdmin):
-    # What columns to show in the user list view
-    list_display = ('username', 'role', 'created_at')
+@admin.register(User)
+class CustomUserAdmin(UserAdmin):
+    list_display = ('username', 'role', 'created_at', 'is_active')
+    list_filter = ('role', 'is_active', 'created_at')
+    search_fields = ('username',)
+    ordering = ('-created_at',)
     
-    # Fields to use when creating a new user
-    add_fieldsets = (
-        (None, {
-            'fields': ('username', 'password1', 'password2', 'role')
-        }),
-    )
-
-    # Fields to use when editing an existing user
     fieldsets = (
         (None, {
             'fields': ('username', 'password')
         }),
-        ('User Information', {
-            'fields': ['role']
+        ('Permissions', {
+            'fields': (
+                'role',
+                'is_active',
+                'is_staff',
+                'is_superuser',
+            )
         }),
-        ('Dates', {
-            'fields': ['created_at']
+        ('MFA Settings', {
+            'fields': ('mfa_secret',)
+        }),
+        ('Important dates', {
+            'fields': ('created_at', 'last_login')
         }),
     )
     
-    list_filter = ('role',)
-    search_fields = ('username',)
-    ordering = ('username',)
-    readonly_fields = ('created_at',)
-
-admin.site.register(User, CustomUserAdmin)
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': (
+                'username',
+                'password1',
+                'password2',
+                'role',
+                'is_staff',
+                'is_active'
+            )
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'last_login')

@@ -1,31 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchFileShares, addFileShare, updateFileShare, deleteFileShare } from "../../store/fileSlice";
+import { useDispatch, useSelector } from 'react-redux';
 
-const ShareManagement = ({ fileId, shares, shareLoading, dispatch }) => {
+const ShareManagement = ({ fileId }) => {
+  const dispatch = useDispatch();
+  const { currentFile, shareLoading } = useSelector((state) => state.files);
+  const shares = currentFile?.shares;
   const [username, setUsername] = useState('');
   const [permissionType, setPermissionType] = useState('VIEW');
   const [editingShareId, setEditingShareId] = useState(null);
 
+  useEffect(() => {
+    dispatch(fetchFileShares(fileId));
+  }, [dispatch, fileId]);
+
   const handleAddShare = async () => {
-    await dispatch(addFileShare({ fileId, username, permission_type: permissionType }));
+    await dispatch(addFileShare({ 
+      fileId, 
+      username, 
+      permission_type: permissionType 
+    }));
     await dispatch(fetchFileShares(fileId));
     setUsername('');
     setPermissionType('VIEW');
   };
 
-  const handleUpdateShare = async (shareId, newPermissionType) => {
+  const handleUpdateShare = async (shareId, newPermissionType, sharedUsername) => {
     await dispatch(updateFileShare({ 
       fileId, 
       shareId, 
+      username: sharedUsername,
       permission_type: newPermissionType 
     }));
     await dispatch(fetchFileShares(fileId));
     setEditingShareId(null);
   };
 
-  const handleDeleteShare = async (shareId) => {
-      await dispatch(deleteFileShare({ fileId, shareId }));
-      await dispatch(fetchFileShares(fileId));
+  const handleDeleteShare = async (shareId, sharedUsername) => {
+    await dispatch(deleteFileShare({ 
+      fileId, 
+      shareId,
+      username: sharedUsername 
+    }));
+    await dispatch(fetchFileShares(fileId));
   };
 
   return (
@@ -73,7 +90,7 @@ const ShareManagement = ({ fileId, shares, shareLoading, dispatch }) => {
                 {editingShareId === share.id ? (
                   <select
                     value={share.permission_type}
-                    onChange={(e) => handleUpdateShare(share.id, e.target.value)}
+                    onChange={(e) => handleUpdateShare(share.id, e.target.value, share.shared_with_username)}
                     className="mt-1 rounded-md border border-gray-300 px-2 py-1"
                   >
                     <option value="VIEW">View</option>
@@ -96,7 +113,7 @@ const ShareManagement = ({ fileId, shares, shareLoading, dispatch }) => {
                   {editingShareId === share.id ? 'Cancel' : 'Edit'}
                 </button>
                 <button
-                  onClick={() => handleDeleteShare(share.id)}
+                  onClick={() => handleDeleteShare(share.id, share.shared_with_username)}
                   className="text-red-600 hover:text-red-800"
                 >
                   Delete

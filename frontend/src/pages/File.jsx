@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getFileDetails, fetchFileShares } from "../store/fileSlice";
+import { getFileDetails, fetchFilePermission, clearCurrentFile } from "../store/fileSlice";
 import { logout } from "../store/authSlice";
 import api from "../utils/api";
 import { base642buf } from "../utils/crypto";
@@ -12,14 +12,17 @@ function File() {
   const { fileId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { currentFile, loading, shareLoading } = useSelector((state) => state.files);
+  const { currentFile, loading } = useSelector((state) => state.files);
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (fileId) {
       dispatch(getFileDetails(fileId));
-      dispatch(fetchFileShares(fileId));
+      dispatch(fetchFilePermission(fileId));
     }
+    return () => {
+      dispatch(clearCurrentFile());
+    };
   }, [dispatch, fileId]);
 
   const handleLogout = async () => {
@@ -42,9 +45,10 @@ function File() {
       const { encrypted_content, encrypted_key, file_name } =
         downloadResponse.data;
 
-      // Decrypt the AES key using KMS - send the encrypted key as is
+      // Decrypt the AES key using KMS - include key owner username
       const kmsResponse = await api.post("/kms/decrypt", {
         encrypted: encrypted_key,
+        key_owner_username: currentFile.uploaded_by_username
       });
       const decryptedAESKeyBase64 = kmsResponse.data.decrypted;
 
@@ -119,7 +123,7 @@ function File() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title={"File Details"}  navigate={navigate} handleLogout={handleLogout} />
+      <Header title={"File Details"} navigate={navigate} handleLogout={handleLogout} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg p-6">
           <div className="mb-6">
@@ -147,24 +151,25 @@ function File() {
             </div>
           </div>
 
-          <div className="mt-8">
-            <button
-              onClick={handleDownload}
-              disabled={downloading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md
-                hover:bg-blue-700 focus:outline-none focus:ring-2
-                focus:ring-blue-500 focus:ring-offset-2
-                disabled:opacity-50"
-            >
-              {downloading ? "Downloading..." : "Download File"}
-            </button>
-          </div>
-          <ShareManagement
-            fileId={fileId}
-            shares={currentFile?.shares}
-            shareLoading={shareLoading}
-            dispatch={dispatch}
-          />
+          {(currentFile?.permission?.is_owner || 
+            currentFile?.permission?.permission_type === 'DOWNLOAD') && (
+            <div className="mt-8">
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md
+                  hover:bg-blue-700 focus:outline-none focus:ring-2
+                  focus:ring-blue-500 focus:ring-offset-2
+                  disabled:opacity-50"
+              >
+                {downloading ? "Downloading..." : "Download File"}
+              </button>
+            </div>
+          )}
+
+          {currentFile?.permission?.is_owner && (
+            <ShareManagement fileId={fileId} />
+          )}
         </div>
       </main>
     </div>

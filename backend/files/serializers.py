@@ -32,3 +32,27 @@ class FileShareCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = FileShare
         fields = ['shared_with_username', 'permission_type']
+
+    def validate_shared_with_username(self, value):
+        request = self.context.get('request')
+        if request and request.user.username == value:
+            raise serializers.ValidationError("You cannot share a file with yourself")
+        return value
+
+class SharedFileSerializer(serializers.ModelSerializer):
+    file_name = serializers.CharField(source='file.file_name')
+    uploaded_by_username = serializers.CharField(source='file.uploaded_by.username')
+    shared_by_username = serializers.CharField(source='shared_by.username')
+    created_at = serializers.DateTimeField(source='file.created_at')
+
+    class Meta:
+        model = FileShare
+        fields = [
+            'id',
+            'file_id',
+            'file_name',
+            'uploaded_by_username',
+            'shared_by_username',
+            'permission_type',
+            'created_at'
+        ]

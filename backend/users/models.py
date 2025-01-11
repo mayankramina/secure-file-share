@@ -56,3 +56,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+    @property
+    def is_staff(self):
+        # Only users with ADMIN role can access Django admin
+        return self.role == 'ADMIN'

@@ -128,8 +128,21 @@ def mfa_disabled(view_func):
             return response
             
         return Response(
-            {'error': 'MFA already setup'},
+            {'mfa_already_enabled': True},
             status=status.HTTP_400_BAD_REQUEST
         )
         
     return wrapped
+
+def role_required(*allowed_roles):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapped(request, *args, **kwargs):
+            if request.user.role not in allowed_roles:
+                return Response(
+                    {'error': 'Permission denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            return view_func(request, *args, **kwargs)
+        return wrapped
+    return decorator
