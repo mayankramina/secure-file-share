@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 const MyFiles = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { files, loading, uploadLoading } = useSelector((state) => state.files);
+  const { filesList, loading, uploadLoading } = useSelector((state) => state.files);
 
   useEffect(() => {
     if (!uploadLoading) {
@@ -18,7 +18,7 @@ const MyFiles = () => {
 
   return (
     <div className="space-y-4">
-      {files.map((file) => (
+      {filesList.map((file) => (
         <div
           key={file.id}
           className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
@@ -39,7 +39,7 @@ const MyFiles = () => {
           </button>
         </div>
       ))}
-      {files.length === 0 && (
+      {filesList.length === 0 && (
         <p className="text-center text-gray-500">No files uploaded yet</p>
       )}
     </div>
