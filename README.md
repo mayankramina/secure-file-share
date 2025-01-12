@@ -9,14 +9,14 @@ This repository contains a **Client-Side E2EE secure file-sharing web applicatio
 
 Follow these steps to set up and run the application:  
 
-### 1. Clone the Repository  
+### 1. Clone the Repository
 
 ```bash  
 git clone https://github.com/mayankramina/secure-file-share.git  
 cd secure-file-share  
 ```  
 
-### 2. Generate SSL Certificates  
+### 2. Generate self-signed SSL Certificates
 
 ```bash  
 # Create necessary directories  
@@ -35,7 +35,7 @@ cp temp_cert.pem backend/certs/cert.pem
 rm temp_key.pem temp_cert.pem  
 ```  
 
-### 3. Run the Application  
+### 3. Run the Application
 
 ```bash  
 # Build and start the application  
@@ -45,7 +45,7 @@ docker-compose up --build
 docker-compose up -d --build  
 ```  
 
-### 4. Configure the Database and Admin User  
+### 4. Configure the Database and Admin User
 
 ```bash  
 # Access the backend container  
@@ -61,7 +61,7 @@ python manage.py createsuperuser
 exit  
 ```  
 
-### 5. Access the Application  
+### 5. Access the Application
 
 - **Frontend**: [https://localhost:3000](https://localhost:3000)  
 - **Backend**: [https://localhost:8000](https://localhost:8000)  
@@ -77,14 +77,14 @@ Supports browser-session-specific TOTP-based MFA (e.g., Google Authenticator).
 ### ✅ **Role-Based Access Control (RBAC)**  
 - **Admin**: Full control over users and files ([Admin Panel](https://localhost:8000/admin/)).  
 - **Regular User**: Upload, download, and share files.  
-- **Guest**: View shared files with limited access.  
+- **Guest**: Download and view the shared files.  
 
-### ✅ **Client-Side End-to-End Encrypted**  
-- Files are encrypted during transmission and at rest on server with AES-256.
+### ✅ **Client-Side End-to-End File Encryption**  
+- Files are encrypted during transmission and at rest on a server with AES-256.
 - File encryption and file decryption for user and shared users are managed from the client side.
-- This is achieved with key management system to encrypt the AES-256 encryption key with RSA-2048.
-- KMS takes care of decryption of AES-256 encryption key and distribution of keys to other users.
-- KMS been added to replicate trusted key management system unlike the traditional server-side key management system.
+- This is achieved with a key management system to encrypt the AES-256 encryption key with RSA-2048.
+- KMS takes care of the decryption of the AES-256 encryption key and distribution of decryption capabilities by providing server-side access to RSA keys to other users.
+- KMS has been added to replicate a trusted key management system, unlike the traditional server-side key management system.
 
 ### ✅ **Secure File Sharing**  
 - Share files with specific users with configurable **view** or **download** permissions.  
@@ -100,3 +100,13 @@ Supports browser-session-specific TOTP-based MFA (e.g., Google Authenticator).
 - ✅ Input validation and sanitization to prevent malicious data entry.  
 - ✅ Proper session management with JWT expiration.  
 
+## Custom Configuration
+- Custom configuration for many of the above features are present in ```backend/core/settings.py```
+
+## Known Issues & Limitations
+- Storing files on server machine: can switch to solutions like s3 for better file storage
+- No file integrity verification mechanism
+- No file chunking large files are held in memory during encryption/decryption
+- Limited audit logging
+- No password reset functionality
+- Cas conversion on UI (snake case to camel case)
