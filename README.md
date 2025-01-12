@@ -110,3 +110,4 @@ Supports browser-session-specific TOTP-based MFA (e.g., Google Authenticator).
 - Limited audit logging
 - No password reset functionality
 - No case conversion on UI (snake case to camel case)
+- Code can be cleaner
